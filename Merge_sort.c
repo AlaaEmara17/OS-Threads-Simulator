@@ -47,13 +47,39 @@ void merge(int arr[], int left, int mid, int right) {
 }
 
 void* threaded_merge_sort(void* arg) {
+    ThreadArgs *data = (ThreadArgs *)arg;
+    if( (data->right - data ->left ) +1 < 2){
+        return data->arr ;
+    }
+    else{
+        pthread_t l , r ;
+        ThreadArgs *argsL = malloc(sizeof(ThreadArgs));
+        ThreadArgs *argsR = malloc(sizeof(ThreadArgs));
+        argsL->left= data->left; 
+        int mid = (data->right + data->left)/2 ;
+        argsL->right = mid ;
+        argsR->left = mid + 1 ;
+        argsR->right = data->right ;
+        argsR->arr = data->arr ; argsL->arr = data->arr;
+      
+        pthread_create(&l , NULL , threaded_merge_sort , argsL );
+        pthread_create(&r , NULL , threaded_merge_sort , argsR);
+        pthread_join (l , NULL);
+        pthread_join (r , NULL);
+        merge(data->arr , argsL->left , mid , argsR->right);
+        free(argsR);
+        free(argsL);
+    }
+    
+    return NULL ;
 
     // you have to Implement the full function to be using the merge function
     // and to call it in the main
+
 }
 
 int main() {
-    FILE* file = fopen("input", "r");
+    FILE* file = fopen("sample_input.txt", "r");
     if (!file) {
         printf("Error opening file.\n");
         return 1;
@@ -68,6 +94,19 @@ int main() {
     fclose(file);
 
     // Make the required changes inorder to be able to call the Thread fn
+    if(n > 1 ){
+        // main thread 
+         pthread_t thread ;
+            ThreadArgs* t1 = malloc(sizeof(ThreadArgs));
+              int mid =( (n -1)/2 );
+            t1->left = 0 ; t1->right = n-1;
+            t1->arr = arr;
+            pthread_create(&thread , NULL , threaded_merge_sort , t1);
+            pthread_join(thread , NULL );
+            merge(arr , t1->left , mid , t1->right);
+            free(t1);
+         
+    }
     /*You code*/
 
     printf("Sorted array:\n");

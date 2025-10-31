@@ -7,22 +7,63 @@
 typedef struct {
     int rows;
     int cols;
-    int **data;
+    int **data; // dynamic 2d array  data points to array of pointers each pointer representing row
 } Matrix;
 
 
 // Function to allocate matrix
 Matrix* createMatrix(int rows, int cols) {
-
+     // just for understanding 
+     // mat  [ row , col , *data (array of pointers )[ *r1 , *r2 , *r3 ]]
+     //      r1[the actual integers  1 , 2 , 3  ]
+        Matrix * mat = malloc(sizeof(Matrix));
+        mat->rows = rows ;
+        mat->cols = cols;
+        mat->data = malloc(rows* sizeof(int*));
+        for(int i =0 ; i< rows ; i++){
+            mat->data[i] = malloc (cols* sizeof(int));
+        }
+    return mat;
 }
 
 // Function to free matrix
 void freeMatrix(Matrix *mat) {
 
+
 }
 
 // Function to read matrices from file
 int readMatrices(Matrix **mat1, Matrix **mat2) {
+    FILE* file = fopen("matrix_input.txt", "r");
+
+    if (!file) {
+        printf("Error opening file.\n");
+        return 1;
+    }
+
+    int r1 , c1;
+    fscanf(file, "%d %d", &r1 , &c1);
+
+    *mat1 = createMatrix(r1 , c1);
+
+
+    for(int i =0 ; i< r1 ; i++){
+        for(int j =0 ; j< c1; j++){
+          fscanf(file , "%d" , &((*mat1)->data[i][j]));
+        }
+    }
+     int r2 , c2;
+    fscanf(file, "%d %d", &r2 , &c2);
+
+    *mat2 = createMatrix(r2, c2);
+
+
+    for(int i =0 ; i< r2 ; i++){
+        for(int j =0 ; j< c2; j++){
+          fscanf(file , "%d" , &((*mat2)->data[i][j]));
+        }
+    }
+    return 0;
     
 }
 
@@ -36,11 +77,47 @@ void printMatrix(Matrix *mat) {
         printf("\n");
     }
 }
+// 
+typedef struct{
+    Matrix * a ;
+    Matrix * b ;
+    Matrix *res ;
+    int row;
+    int col;
 
+}Thread_arguments ;
 
+void * multiply( void*args ){
+   Thread_arguments * arg = (Thread_arguments *)args;
+   int op =0;
+    for(int i =0 ; i< arg->a->cols ; i++){
+         op+= arg->a->data[arg->row][i] * arg->b->data[i][arg->col];
+
+    }
+    arg->res->data[arg->row][arg->col]= op;
+    free(arg);
+    return NULL;
+}
 // Method 1: One thread per element
 void multiplyMatricesPerElement(Matrix *mat1, Matrix *mat2, Matrix **result) {
-
+    // i will have thread for each ele #ele = rows *cols 
+    pthread_t threads[mat1->cols * mat2->rows];
+    int count =0 ;
+    for(int i =0 ; i< mat1->rows ; i++){
+        for(int j =0 ; j< mat2->cols ; j++){
+        Thread_arguments * args = malloc(sizeof(Thread_arguments));
+        args->a= mat1 ;
+        args->b =mat2 ;
+      // current row , col in mat1 , mat2 
+        args->row= i;
+        args->col= j;
+        args->res = *(result);
+        pthread_create(&threads[count++] , NULL , multiply ,args );
+    }
+    }
+    for(int k = 0 ; k < count ; k++){
+        pthread_join(threads[k] , NULL);
+    }
 }
 
 // Method 2: One thread per row
@@ -51,27 +128,32 @@ void multiplyMatricesPerRow(Matrix *mat1, Matrix *mat2, Matrix **result) {
 
 int main() {
 
-    Matrix *mat1, *mat2, *result1, *result2;
-
+    Matrix *mat1 ,*mat2, *result1 ,*result2 ;
     // Read matrices from file
     if (readMatrices(&mat1, &mat2) != 0) {
         fprintf(stderr, "Error reading matrices\n");
         return 1;
     }
+    result1 = createMatrix(mat1->rows , mat2->cols);
+    result2 = createMatrix(mat1->rows , mat2->cols);
+    //debugging for creating matrix
+
+    // printMatrix(mat1);
+    // printMatrix(mat2);
 
     // Method 1: Per element
     multiplyMatricesPerElement(mat1, mat2, &result1);
     printMatrix(result1);
 
-    // Method 2: Per row
-    multiplyMatricesPerRow(mat1, mat2, &result2);
-    printMatrix(result2);
+    // // Method 2: Per row
+    // multiplyMatricesPerRow(mat1, mat2, &result2);
+    // printMatrix(result2);
 
-    // Cleanup
-    freeMatrix(mat1);
-    freeMatrix(mat2);
-    freeMatrix(result1);
-    freeMatrix(result2);
+    // // Cleanup
+    // freeMatrix(mat1);
+    // freeMatrix(mat2);
+    // freeMatrix(result1);
+    // freeMatrix(result2);
 
     return 0;
 }
