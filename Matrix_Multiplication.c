@@ -29,6 +29,11 @@ Matrix* createMatrix(int rows, int cols) {
 // Function to free matrix
 void freeMatrix(Matrix *mat) {
 
+for (int i = 0; i < mat->rows; i++) {
+        free(mat->data[i]);   // free each row
+    }
+    free(mat->data);           // free the array of row pointers
+    free(mat); 
 
 }
 
@@ -119,10 +124,33 @@ void multiplyMatricesPerElement(Matrix *mat1, Matrix *mat2, Matrix **result) {
         pthread_join(threads[k] , NULL);
     }
 }
+void *multiply_per_row(void *args){
+  Thread_arguments *arg = (Thread_arguments *) args;
+  for(int i =0 ; i< arg->b->cols ; i++){
+         int op =0 ; 
+         for(int j =0 ; j< arg->a->cols ; j++){
+             op += arg->a->data[arg->row][j] * arg->b->data[j][i];            
+         }
+         arg->res->data[arg->row][i] = op ;
+  }
+   free(arg);
+   return NULL;
 
+}
 // Method 2: One thread per row
 void multiplyMatricesPerRow(Matrix *mat1, Matrix *mat2, Matrix **result) {
-    
+    pthread_t thread [(mat1->rows)];
+    for(int i =0 ; i<mat1->rows ; i++){
+        Thread_arguments *args = malloc(sizeof(Thread_arguments));
+        args->a = mat1 ;
+        args->b = mat2;
+        args->res= *(result) ;
+        args->row= i ;
+        pthread_create(&thread[i] , NULL , multiply_per_row , args);
+    }
+    for(int k = 0 ; k < mat1->rows; k++){
+        pthread_join(thread[k] , NULL);
+    }
 
 }
 
@@ -142,18 +170,29 @@ int main() {
     // printMatrix(mat2);
 
     // Method 1: Per element
+    struct timeval start, end;
+ //start current wall clock 
+    gettimeofday(&start, NULL);
     multiplyMatricesPerElement(mat1, mat2, &result1);
     printMatrix(result1);
-
+    gettimeofday(&end, NULL);
+    double elapsed = (end.tv_sec - start.tv_sec)  * 1000.0;    // *1000 convert sec to ms 
+     elapsed += (end.tv_usec - start.tv_usec) / 1000.0;   
+    printf("END 1     %.3f msec \n" , elapsed );
     // // Method 2: Per row
-    // multiplyMatricesPerRow(mat1, mat2, &result2);
-    // printMatrix(result2);
+    gettimeofday(&start, NULL);
+    multiplyMatricesPerRow(mat1, mat2, &result2);
+    printMatrix(result2);
+     gettimeofday(&end, NULL);
+     elapsed = (end.tv_sec - start.tv_sec)  * 1000.0;    // *1000 convert sec to ms 
+      elapsed += (end.tv_usec - start.tv_usec) / 1000.0;   
+    printf("END 2        %.3f msec\n" , elapsed );
 
     // // Cleanup
-    // freeMatrix(mat1);
-    // freeMatrix(mat2);
-    // freeMatrix(result1);
-    // freeMatrix(result2);
+    freeMatrix(mat1);
+    freeMatrix(mat2);
+    freeMatrix(result1);
+    freeMatrix(result2);
 
     return 0;
 }

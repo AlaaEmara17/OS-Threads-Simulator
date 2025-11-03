@@ -10,8 +10,8 @@ mult: Matrix_Multiplication.c
 #run: mergesort
 #	./mergesort
 
-#run: mult
-#	./mult
+run: mult
+	./mult
 
 clear:
 	rm -f mergesort
