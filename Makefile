@@ -7,12 +7,12 @@ mult: Matrix_Multiplication.c
 	chmod +x Matrix_Multiplication.c
 	gcc Matrix_Multiplication.c -o mult
 
-#run: mergesort
-#	./mergesort
+run_mergesort: mergesort
+	./mergesort
 
-run: mult
+run_mult: mult
 	./mult
 
-clear:
+clean:
 	rm -f mergesort
 	rm -f mult

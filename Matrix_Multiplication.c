@@ -171,7 +171,7 @@ int main() {
 
     // Method 1: Per element
     struct timeval start, end;
- //start current wall clock 
+ //start  = current wall clock 
     gettimeofday(&start, NULL);
     multiplyMatricesPerElement(mat1, mat2, &result1);
     printMatrix(result1);
